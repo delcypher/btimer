@@ -2,9 +2,10 @@ This is a simple batch timer script for timing an individual program. It also ca
 
 To run at terminal
 
-$ ./btimer <executable>
+$ ./btimer <runs> <executable> [ <executable argment 1> ... <executable argment n> ]
 
-e.g. 
+Examples
 
+$ ./btimer 5 /usr/bin/hello 1  #Runs "/usr/bin/hello 1" 5 times
 
-$ ./btimer "/path/to/program"
+$./btimer 3 helloworld #Runs "./helloworld" 3 times

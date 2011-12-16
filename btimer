@@ -18,15 +18,15 @@
 DEPS=( time tee bc grep sed )
 TIME="/usr/bin/time -p" #Time executable to use
 LOG='log-times.txt' #Log output of timings
-declare -ix RUNS=5 #No of repeat executions to make
 declare -ax rtime
 declare -ax utime
 declare -ax stime
 
 function usage()
 {
-	echo "${0} <executable>"
-	echo "Run <executable> ${RUNS} times and use ${TIME} to log execution time and put output in ${LOG}"
+	echo -e "Usage:\n"
+	echo "${0} <runs> <executable>"
+	echo "Run <executable> <runs> times and use \"${TIME}\" to log execution time and put output in ${LOG}"
 	exit 1;
 }
 
@@ -53,15 +53,23 @@ function check-deps()
 ###START MAIN
 check-deps
 
-EXECUTABLE="$1"
+RUNS="$1"
+EXECUTABLE="$2"
 
 if [ $# -lt 1 ]; then usage ; fi #Check we have at least one argument
 
-if [ ! -x "$EXECUTABLE" ]; then echo "${1} must be an executable!" 2>&1; exit 1; fi #Check executable
+if [ $(echo "$RUNS" | grep -Ec '^[0-9]+$') -ne 1 ]; then
+	echo "$RUNS is not a valid number of times to run the executable"; exit 1
+fi
+
+#Check executable
+if [ -z "$EXECUTABLE" -o ! -x "$EXECUTABLE" ]; then 
+	echo "${EXECUTABLE} must be an executable!" 2>&1; exit 1; 
+fi 
 
 EARGS=""
 #Grap the rest of the program arguments
-for ((n=2; n <= $#; n++))
+for ((n=3; n <= $#; n++))
 do
 	EARGS="${EARGS}$( printf %q ${!n})"
 done
