@@ -1,0 +1,124 @@
+#!/bin/bash
+# Copyright (C) 2011 Daniel Liew
+#
+# This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##########################################################################
+
+DEPS=( time tee bc grep sed )
+TIME="/usr/bin/time -p" #Time executable to use
+LOG='log-times.txt' #Log output of timings
+declare -ix RUNS=5 #No of repeat executions to make
+declare -ax rtime
+declare -ax utime
+declare -ax stime
+
+function usage()
+{
+	echo "${0} <executable>"
+	echo "Run <executable> ${RUNS} times and use ${TIME} to log execution time and put output in ${LOG}"
+	exit 1;
+}
+
+function log()
+{
+	#Write to stdout but also append to log file
+	while read input ; do
+		echo "$input" | tee --append "$LOG"
+	done
+}
+
+function check-deps()
+{
+	for program in ${DEPS[@]} ; do
+		which $program 2> /dev/null 1>&2
+
+		if [ "$?" -ne 0 ]; then
+			echo "$program not found"
+			exit 1;
+		fi
+	done
+}
+
+###START MAIN
+check-deps
+
+EXECUTABLE="$1"
+
+if [ $# -lt 1 ]; then usage ; fi #Check we have at least one argument
+
+if [ ! -x "$EXECUTABLE" ]; then echo "${1} must be an executable!" 2>&1; exit 1; fi #Check executable
+
+EARGS=""
+#Grap the rest of the program arguments
+for ((n=2; n <= $#; n++))
+do
+	EARGS="${EARGS}$( printf %q ${!n})"
+done
+
+#Append "./" if executable in current directory
+if [ $(echo "${EXECUTABLE}" | grep -Ec '^/') -eq 0 ]; then
+	EXECUTABLE="./${EXECUTABLE}"
+fi
+
+echo "Running: ${EXECUTABLE} ${EARGS}"
+
+#Gather host info
+echo "Hostname: $(hostname)" | log
+echo "CPUs:" | log
+grep -E '^model name' /proc/cpuinfo | log
+
+echo -e "\nRun\tReal\tuser\tsys\n" | log
+#Do timing runs
+for ((r=1;r<= $RUNS; r++))
+do
+	DATA=$( ${TIME} "$EXECUTABLE" $EARGS 2>&1 1> /dev/null )
+	rtime[$r]=$( echo "$DATA" | sed -n 's/real \([0-9.]\+\)/\1/g ; 1p')
+	utime[$r]=$( echo "$DATA" | sed -n 's/user \([0-9.]\+\)/\1/g ; 2p')
+	stime[$r]=$( echo "$DATA" | sed -n 's/sys \([0-9.]\+\)/\1/g ; 3p')
+	echo -e "${r}\t${rtime[$r]}\t${utime[$r]}\t${stime[$r]}" | log  #line output
+done
+
+#Compute averages
+#Generate bc line
+
+rtbc="scale=2 ; ( "
+utbc="$rtbc"
+stbc="$rtbc"
+
+#Generate BC command
+for ((r=1; r<=$RUNS ; r++))
+do
+	if [ $r -ne $RUNS ]; then
+		rtbc="${rtbc} ${rtime[$r]} +"	
+		utbc="${utbc} ${utime[$r]} +"	
+		stbc="${stbc} ${stime[$r]} +"	
+	else
+		#last addition
+		rtbc="${rtbc} ${rtime[$r]} ) / ${RUNS}"
+		utbc="${utbc} ${utime[$r]} ) / ${RUNS}"
+		stbc="${stbc} ${stime[$r]} ) / ${RUNS}"
+	fi
+done
+
+rtAverage=$( echo "$rtbc" | bc -l)
+utAverage=$( echo "$utbc" | bc -l)
+stAverage=$( echo "$stbc" | bc -l)
+
+echo "Real average: ${rtAverage}" | log
+echo "User average: ${utAverage}" | log
+echo "System average: ${stAverage}" | log
+
+echo -e "\n###############\n" >> "$LOG"
+
+###END MAIN

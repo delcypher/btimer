@@ -1,0 +1,10 @@
+This is a simple batch timer script for timing an individual program. It also calculates the arithmetic mean real,user and sys times.
+
+To run at terminal
+
+$ ./btimer <executable>
+
+e.g. 
+
+
+$ ./btimer "/path/to/program"
