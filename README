@@ -1,4 +1,5 @@
 This is a simple batch timer script for timing an individual program. It also calculates the arithmetic mean real,user and sys times.
+The timings are shown on standard output but also written to a file called "log-timings.txt" by default (modify the variable $LOG to change where the timings are written to).
 
 To run at terminal
 
@@ -6,6 +7,6 @@ $ ./btimer <runs> <executable> [ <executable argment 1> ... <executable argment 
 
 Examples
 
-$ ./btimer 5 /usr/bin/hello 1  #Runs "/usr/bin/hello 1" 5 times
+$ ./btimer 5 /usr/bin/sleep 1  #Runs "/usr/bin/sleep 1" 5 times
 
 $./btimer 3 helloworld #Runs "./helloworld" 3 times
