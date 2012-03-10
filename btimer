@@ -68,10 +68,10 @@ if [ -z "$EXECUTABLE" -o ! -x "$EXECUTABLE" ]; then
 fi 
 
 EARGS=""
-#Grap the rest of the program arguments
+#Grab the rest of the program arguments
 for ((n=3; n <= $#; n++))
 do
-	EARGS="${EARGS}$( printf %q ${!n})"
+	EARGS="${EARGS} $( printf %q ${!n})"
 done
 
 #Append "./" if executable in current directory
